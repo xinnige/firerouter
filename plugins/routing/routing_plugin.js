@@ -229,14 +229,18 @@ class RoutingPlugin extends Plugin {
     }
     for (const intf of intfPlugins) {
       if (!af || af == 4) {
-        await routing.removeRouteFromTable("default", null, intf.name, tableName).catch((err) => {
+        if (routing.searchRouteRules("default", null, intf.name, tableName, null, 4).length > 0) {
+          await routing.removeRouteFromTable("default", null, intf.name, tableName).catch((err) => {
             this.log.warn(`fail to remove route -4 default dev ${intf.name} table ${tableName}, err:`, err.message);
-        });
+          });
+        }
       }
       if (!af || af == 6) {
-        await routing.removeRouteFromTable("default", null, intf.name, tableName, 6).catch((err) => {
-          this.log.warn(`fail to remove route -6 default dev ${intf.name} table ${tableName}, err:`, err.message);
-        });
+        if (routing.searchRouteRules("default", null, intf.name, tableName, null, 6).length > 0) {
+          await routing.removeRouteFromTable("default", null, intf.name, tableName, 6).catch((err) => {
+            this.log.warn(`fail to remove route -6 default dev ${intf.name} table ${tableName}, err:`, err.message);
+          });
+        }
       }
     }
   }
@@ -415,7 +419,7 @@ class RoutingPlugin extends Plugin {
             routeRemoved = true;
           }).catch((err) => {
             routeRemoved = false;
-            this.log.warn('fail to remove route default from table main, err:', err.message)
+            this.log.info('fail to remove route default from table main, err:', err.message)
           });
         } while (routeRemoved)
       }
@@ -426,7 +430,7 @@ class RoutingPlugin extends Plugin {
             routeRemoved = true;
           }).catch((err) => {
             routeRemoved = false;
-            this.log.warn('fail to remove route default from table main, err:', err.message)
+            this.log.info('fail to remove route default from table main, err:', err.message)
           });
         } while (routeRemoved)
       }
@@ -434,7 +438,7 @@ class RoutingPlugin extends Plugin {
         // remove DNS specific routes
         if (_.isObject(this._dnsRoutes)) {
           for (const dnsRoute of Object.keys(this._dnsRoutes).map(key => this._dnsRoutes[key]).filter(i => i.af == 4)) {
-            await routing.removeRouteFromTable(dnsRoute.dest, dnsRoute.gw, dnsRoute.viaIntf, dnsRoute.tableName ? dnsRoute.tableName : "main", 4).catch((err) => {
+            await routing.removeRouteFromTable(dnsRoute.dest, dnsRoute.gw, dnsRoute.viaIntf, dnsRoute.tableName ? dnsRoute.tableName : "main", 4, "unicast", dnsRoute.metric).catch((err) => {
               this.log.warn('fail to remove dns route from table main, err:', err.message)
             });
           }
@@ -445,7 +449,7 @@ class RoutingPlugin extends Plugin {
         // remove DNS specific routes
         if (_.isObject(this._dnsRoutes)) {
           for (const dnsRoute of Object.keys(this._dnsRoutes).map(key => this._dnsRoutes[key]).filter(i => i.af == 6)) {
-            await routing.removeRouteFromTable(dnsRoute.dest, dnsRoute.gw, dnsRoute.viaIntf, dnsRoute.tableName ? dnsRoute.tableName : "main", 6).catch((err) => {
+            await routing.removeRouteFromTable(dnsRoute.dest, dnsRoute.gw, dnsRoute.viaIntf, dnsRoute.tableName ? dnsRoute.tableName : "main", 6, "unicast", dnsRoute.metric).catch((err) => {
               this.log.warn('fail to remove dns route from table main, err:', err.message)
             });
           }
